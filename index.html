@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🌑 Moon or Doom</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+<style>*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d0d1a;color:#e0e0f0;font-family:'Segoe UI',sans-serif;min-height:100vh}
+header{text-align:center;padding:2.5rem 1rem 1.5rem;background:linear-gradient(180deg,#1a0a2e 0%,#0d0d1a 100%);border-bottom:1px solid #ffffff15}
+h1{font-size:2.4rem;letter-spacing:2px;background:linear-gradient(135deg,#f4d03f,#8e44ad,#e74c3c);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{color:#888;margin-top:.5rem;font-size:.9rem}
+main{max-width:1100px;margin:0 auto;padding:2rem 1rem}
+.controls{display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end;background:#ffffff08;border:1px solid #ffffff15;border-radius:14px;padding:1.5rem;margin-bottom:2rem}
+.control-group{display:flex;flex-direction:column;gap:.4rem;min-width:160px}
+label{font-size:.75rem;color:#aaa;text-transform:uppercase;letter-spacing:1px}
+select{background:#1a1a2e;color:#e0e0f0;border:1px solid #ffffff25;border-radius:8px;padding:.6rem .9rem;font-size:.95rem;cursor:pointer;outline:none}
+select:focus{border-color:#8e44ad}
+button{background:linear-gradient(135deg,#8e44ad,#3498db);color:#fff;border:none;border-radius:8px;padding:.7rem 1.8rem;font-size:1rem;cursor:pointer;font-weight:600;transition:opacity .2s;align-self:flex-end}
+button:hover{opacity:.85}
+#status{text-align:center;padding:1rem;color:#aaa;font-size:.95rem}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.2rem;margin-bottom:2rem}
+.stat-card{background:#ffffff08;border:1px solid #ffffff15;border-radius:14px;padding:1.4rem;transition:border-color .2s}
+.stat-card:hover{border-color:#ffffff30}
+.stat-title{font-size:1.1rem;font-weight:700;margin-bottom:.3rem}
+.stat-count{font-size:.8rem;color:#888;margin-bottom:.8rem}
+.stat-numbers{display:flex;gap:1.2rem;font-size:.9rem;margin-bottom:1rem;flex-wrap:wrap}
+.pos{color:#2ecc71}.neg{color:#e74c3c}.neutral-color{color:#aaa}
+.signal-box{border-radius:10px;padding:1rem 1.2rem;margin-top:.5rem}
+.signal-box.long{background:#2ecc7120;border:1px solid #2ecc7155}
+.signal-box.short{background:#e74c3c20;border:1px solid #e74c3c55}
+.signal-box.neutral{background:#ffffff0a;border:1px solid #ffffff20}
+.signal-main{font-size:1.3rem;font-weight:800;margin-bottom:.3rem}
+.signal-desc{font-size:.82rem;color:#ccc;line-height:1.5}
+.chart-wrap{background:#ffffff08;border:1px solid #ffffff15;border-radius:14px;padding:1.5rem;margin-bottom:1.5rem}
+.chart-wrap h3{margin-bottom:1rem;font-size:1rem;color:#ccc}
+.chart-wrap canvas{max-height:320px}
+.table-wrap{background:#ffffff08;border:1px solid #ffffff15;border-radius:14px;padding:1.5rem;overflow-x:auto}
+.table-wrap h3{margin-bottom:1rem;font-size:1rem;color:#ccc}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+th{color:#888;font-weight:600;padding:.6rem .8rem;text-align:left;border-bottom:1px solid #ffffff15;text-transform:uppercase;font-size:.75rem;letter-spacing:.5px}
+td{padding:.55rem .8rem;border-bottom:1px solid #ffffff0a}
+tr:hover td{background:#ffffff05}
+footer{text-align:center;padding:2rem;color:#444;font-size:.8rem}
+</style>
+</head>
+<body>
+<header>
+  <h1>🌑 Moon or Doom</h1>
+  <p class="subtitle">Астрономические события и крипторынок — серьёзный анализ несерьёзной теории</p>
+</header>
+<main>
+  <div class="controls">
+    <div class="control-group">
+      <label>Монета</label>
+      <select id="coinSelect">
+        <option value="BTC">Bitcoin (BTC)</option>
+        <option value="ETH">Ethereum (ETH)</option>
+        <option value="SOL" selected>Solana (SOL)</option>
+        <option value="TON">TON</option>
+        <option value="LINK">Chainlink (LINK)</option>
+        <option value="STRK">Starknet (STRK)</option>
+        <option value="DOGE">Dogecoin (DOGE)</option>
+        <option value="SHIB">Shiba Inu (SHIB)</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>Период истории</label>
+      <select id="periodSelect">
+        <option value="90">3 месяца</option>
+        <option value="180" selected>6 месяцев</option>
+        <option value="365">1 год</option>
+        <option value="730">2 года</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>Событие</label>
+      <select id="eventSelect">
+        <option value="all">Все события</option>
+        <option value="fullmoon">🌕 Полнолуние</option>
+        <option value="newmoon">🌑 Новолуние</option>
+        <option value="mercury">☿ Ретроград Меркурия</option>
+      </select>
+    </div>
+    <button onclick="analyze()">🔭 Анализировать</button>
+  </div>
+  <div id="status"></div>
+  <div id="results"></div>
+</main>
+<footer>Moon or Doom © 2026 — не финансовый совет, астрологический 🌙</footer>
+<script>const COINS = {
+  BTC:  {id:'BTC',  name:'Bitcoin',    color:'#f7931a'},
+  ETH:  {id:'ETH',  name:'Ethereum',   color:'#627eea'},
+  SOL:  {id:'SOL',  name:'Solana',     color:'#9945ff'},
+  TON:  {id:'TON',  name:'TON',        color:'#0088cc'},
+  LINK: {id:'LINK', name:'Chainlink',  color:'#2a5ada'},
+  STRK: {id:'STRK', name:'Starknet',   color:'#ec796b'},
+  DOGE: {id:'DOGE', name:'Dogecoin',   color:'#c2a633'},
+  SHIB: {id:'SHIB', name:'Shiba Inu',  color:'#e2441b'},
+};
+
+const WINDOW = 2; // ±2 days
+
+// Moon phase calc (Jean Meeus algorithm)
+function getMoonPhase(date) {
+  const d = new Date(date);
+  const year = d.getFullYear(), month = d.getMonth()+1, day = d.getDate();
+  let y = year, m = month;
+  if (m <= 2) { y--; m += 12; }
+  const A = Math.floor(y/100), B = 2 - A + Math.floor(A/4);
+  const jd = Math.floor(365.25*(y+4716)) + Math.floor(30.6001*(m+1)) + day + B - 1524.5;
+  const T = (jd - 2451545.0) / 36525;
+  const M = 357.5291 + 35999.0503*T - 0.0001559*T*T;
+  const Mprime = 134.9634 + 477198.8676*T + 0.008997*T*T;
+  const F = 93.2721 + 483202.0175*T - 0.0034029*T*T;
+  const Omega = 125.0445 - 1934.1363*T;
+  const Mr = M * Math.PI/180, Mpr = Mprime * Math.PI/180, Fr = F * Math.PI/180, Or = Omega * Math.PI/180;
+  const k0 = (jd - 2451550.09766) / 29.530588861;
+  const phase = ((k0 % 1) + 1) % 1;
+  return phase;
+}
+
+function getIllumination(date) {
+  const phase = getMoonPhase(date);
+  return (1 - Math.cos(2 * Math.PI * phase)) / 2;
+}
+
+// Get full moons and new moons in range
+function getMoonEvents(startDate, endDate) {
+  const events = [];
+  const d = new Date(startDate);
+  d.setHours(0,0,0,0);
+  const end = new Date(endDate);
+  let prevPhase = getMoonPhase(new Date(d.getTime() - 86400000));
+  while (d <= end) {
+    const phase = getMoonPhase(d);
+    const frac = ((phase - prevPhase) + 1) % 1;
+    if (prevPhase > 0.95 && phase < 0.05) {
+      events.push({date: new Date(d), type: 'newmoon', label: '🌑 Новолуние'});
+    } else if (prevPhase < 0.55 && phase > 0.45 && prevPhase > 0.4) {
+      events.push({date: new Date(d), type: 'fullmoon', label: '🌕 Полнолуние'});
+    }
+    prevPhase = phase;
+    d.setDate(d.getDate() + 1);
+  }
+  return events;
+}
+
+// Mercury retrograde periods (known dates)
+const MERCURY_RETROGRADES = [
+  {start:'2023-04-21',end:'2023-05-15'},{start:'2023-08-23',end:'2023-09-15'},
+  {start:'2023-12-13',end:'2024-01-01'},{start:'2024-04-01',end:'2024-04-25'},
+  {start:'2024-08-05',end:'2024-08-28'},{start:'2024-11-25',end:'2024-12-15'},
+  {start:'2025-03-15',end:'2025-04-07'},{start:'2025-07-18',end:'2025-08-11'},
+  {start:'2025-11-09',end:'2025-11-29'},{start:'2026-03-07',end:'2026-03-31'},
+  {start:'2026-07-02',end:'2026-07-24'},{start:'2026-10-23',end:'2026-11-13'},
+];
+
+function getMercuryEvents(startDate, endDate) {
+  const events = [];
+  for (const r of MERCURY_RETROGRADES) {
+    const rs = new Date(r.start), re = new Date(r.end);
+    if (rs <= endDate && re >= startDate) {
+      events.push({date: rs, type:'mercury',label:'☿ Нач. ретроград'});
+      events.push({date: re, type:'mercury_end',label:'☿ Конец ретроград'});
+    }
+  }
+  return events;
+}
+
+function isMercuryRetro(date) {
+  for (const r of MERCURY_RETROGRADES) {
+    if (date >= new Date(r.start) && date <= new Date(r.end)) return true;
+  }
+  return false;
+}
+
+async function fetchPrices(symbol, days) {
+  const url = `https://min-api.cryptocompare.com/data/v2/histoday?fsym=${symbol}&tsym=USD&limit=${days}&aggregate=1`;
+  const resp = await fetch(url);
+  const json = await resp.json();
+  if (json.Response !== 'Success') throw new Error('API error for ' + symbol);
+  return json.Data.Data.map(d => ({
+    date: new Date(d.time * 1000),
+    close: d.close,
+    open: d.open,
+    high: d.high,
+    low: d.low
+  })).filter(d => d.close > 0);
+}
+
+function findPrice(prices, targetDate) {
+  const t = targetDate.getTime();
+  let best = null, bestDiff = Infinity;
+  for (const p of prices) {
+    const diff = Math.abs(p.date.getTime() - t);
+    if (diff < bestDiff) { bestDiff = diff; best = p; }
+  }
+  return best;
+}
+
+function getPriceRange(prices, centerDate, daysBefore, daysAfter) {
+  const result = [];
+  for (let i = -daysBefore; i <= daysAfter; i++) {
+    const d = new Date(centerDate.getTime() + i * 86400000);
+    const p = findPrice(prices, d);
+    if (p) result.push({ offset: i, price: p.close, date: d });
+  }
+  return result;
+}
+
+function calcPctChange(from, to) {
+  return ((to - from) / from) * 100;
+}
+
+function getSignal(pctAfter, probability, type) {
+  const absP = Math.abs(pctAfter);
+  const isUp = pctAfter > 0;
+  
+  if (probability < 55) return { text: '🤷 Нет сигнала', cls: 'neutral', desc: `Статистика неоднозначна (${probability.toFixed(0)}% вверх)` };
+  
+  const strength = probability >= 70 ? '🔥 Сильный' : probability >= 62 ? '⚡ Умеренный' : '💡 Слабый';
+  
+  if (isUp) {
+    return {
+      text: `📈 ЛОНГ`,
+      cls: 'long',
+      desc: `${strength} сигнал. Вероятность роста: ${probability.toFixed(0)}% | Ср. +${pctAfter.toFixed(1)}% за ${WINDOW}д после`
+    };
+  } else {
+    return {
+      text: `📉 ШОРТ`,
+      cls: 'short',
+      desc: `${strength} сигнал. Вероятность падения: ${(100-probability).toFixed(0)}% | Ср. ${pctAfter.toFixed(1)}% за ${WINDOW}д после`
+    };
+  }
+}
+
+let currentChart = null;
+
+async function analyze() {
+  const coin = document.getElementById('coinSelect').value;
+  const period = parseInt(document.getElementById('periodSelect').value);
+  const eventType = document.getElementById('eventSelect').value;
+
+  const statusEl = document.getElementById('status');
+  const resultsEl = document.getElementById('results');
+  statusEl.textContent = '⏳ Загружаю данные...';
+  resultsEl.innerHTML = '';
+
+  try {
+    const prices = await fetchPrices(coin, period);
+    if (!prices.length) throw new Error('Нет данных');
+
+    const startDate = prices[0].date;
+    const endDate = prices[prices.length-1].date;
+
+    const moonEvents = getMoonEvents(startDate, endDate);
+    const mercuryEvents = getMercuryEvents(startDate, endDate);
+
+    let events = [];
+    if (eventType === 'all' || eventType === 'fullmoon') events.push(...moonEvents.filter(e=>e.type==='fullmoon'));
+    if (eventType === 'all' || eventType === 'newmoon')  events.push(...moonEvents.filter(e=>e.type==='newmoon'));
+    if (eventType === 'all' || eventType === 'mercury')  events.push(...mercuryEvents.filter(e=>e.type==='mercury'));
+    events.sort((a,b) => b.date - a.date);
+
+    // Build stats by event type
+    const statsByType = { fullmoon:{name:'🌕 Полнолуние', changes:[]}, newmoon:{name:'🌑 Новолуние', changes:[]}, mercury:{name:'☿ Ретроград', changes:[]} };
+
+    const tableRows = [];
+
+    for (const ev of events) {
+      const range = getPriceRange(prices, ev.date, WINDOW, WINDOW);
+      if (range.length < WINDOW) continue;
+
+      const dayBefore = range.find(r => r.offset === -1) || range.find(r => r.offset === -2);
+      const dayAfter  = range.find(r => r.offset === 1)  || range.find(r => r.offset === 2);
+
+      if (!dayBefore || !dayAfter) continue;
+
+      const pctBefore = calcPctChange(
+        (range.find(r=>r.offset===-WINDOW)||dayBefore).price,
+        dayBefore.price
+      );
+      const pctAfter = calcPctChange(dayBefore.price, dayAfter.price);
+
+      const type = ev.type === 'mercury_end' ? null : ev.type;
+      if (type && statsByType[type]) {
+        statsByType[type].changes.push({ pctAfter, date: ev.date });
+      }
+
+      tableRows.push({ ev, range, pctBefore, pctAfter, priceAtEvent: (range.find(r=>r.offset===0)||dayBefore).price });
+    }
+
+    // Compute stats & signals
+    const statsHTML = Object.entries(statsByType).map(([key, stat]) => {
+      if (!stat.changes.length) return '';
+      const avgAfter = stat.changes.reduce((s,c)=>s+c.pctAfter,0)/stat.changes.length;
+      const probUp = (stat.changes.filter(c=>c.pctAfter>0).length / stat.changes.length)*100;
+      const signal = getSignal(avgAfter, probUp, key);
+      return `
+        <div class="stat-card">
+          <div class="stat-title">${stat.name}</div>
+          <div class="stat-count">${stat.changes.length} событий</div>
+          <div class="stat-numbers">
+            <span class="${avgAfter>=0?'pos':'neg'}">${avgAfter>=0?'+':''}${avgAfter.toFixed(2)}% ср. после</span>
+            <span>${probUp.toFixed(0)}% случаев рост</span>
+          </div>
+          <div class="signal-box ${signal.cls}">
+            <div class="signal-main">${signal.text}</div>
+            <div class="signal-desc">${signal.desc}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Trend chart data
+    const trendDatasets = [];
+    const typeColors = { fullmoon:'#f4d03f', newmoon:'#8e44ad', mercury:'#e74c3c' };
+    
+    for (const [key, stat] of Object.entries(statsByType)) {
+      if (!stat.changes.length) continue;
+      const offsets = [];
+      for (let i=-WINDOW; i<=WINDOW; i++) offsets.push(i);
+      const avgByOffset = offsets.map(offset => {
+        const vals = [];
+        for (const ev of events.filter(e=>e.type===key)) {
+          const range = getPriceRange(prices, ev.date, WINDOW, WINDOW);
+          const base = range.find(r=>r.offset===-1) || range.find(r=>r.offset===0);
+          const pt = range.find(r=>r.offset===offset);
+          if (base && pt && base.price>0) vals.push((pt.price/base.price-1)*100);
+        }
+        return vals.length ? vals.reduce((s,v)=>s+v,0)/vals.length : 0;
+      });
+      trendDatasets.push({
+        label: stat.name,
+        data: avgByOffset,
+        borderColor: typeColors[key]||'#aaa',
+        backgroundColor: 'transparent',
+        borderWidth: 2.5,
+        pointRadius: 4,
+        tension: 0.3,
+      });
+    }
+
+    // Price chart
+    const priceDataset = {
+      label: `${coin}/USD`,
+      data: prices.map(p=>({x:p.date.toISOString().split('T')[0], y:p.close})),
+      borderColor: COINS[coin].color,
+      backgroundColor: COINS[coin].color+'22',
+      borderWidth: 1.5,
+      pointRadius: 0,
+      fill: true,
+      tension: 0.2,
+    };
+
+    // Event annotations
+    const annotations = {};
+    for (const ev of events) {
+      const d = ev.date.toISOString().split('T')[0];
+      const col = ev.type==='fullmoon'?'#f4d03f': ev.type==='newmoon'?'#8e44ad':'#e74c3c';
+      annotations['ann_'+d+'_'+ev.type] = {
+        type:'line', xMin:d, xMax:d,
+        borderColor: col+'aa', borderWidth:1.5, borderDash:[4,3],
+      };
+    }
+
+    statusEl.textContent = '';
+    resultsEl.innerHTML = `
+      <div class="stats-grid">${statsHTML}</div>
+      <div class="chart-wrap">
+        <h3>📈 График цены с событиями</h3>
+        <canvas id="priceChart"></canvas>
+      </div>
+      <div class="chart-wrap">
+        <h3>🔭 Среднее движение ±${WINDOW} дней вокруг события</h3>
+        <canvas id="trendChart"></canvas>
+      </div>
+      <div class="table-wrap">
+        <h3>📋 Все события</h3>
+        <table>
+          <thead><tr><th>Дата</th><th>Событие</th><th>Цена</th><th>За ${WINDOW}д до</th><th>За ${WINDOW}д после</th></tr></thead>
+          <tbody>
+            ${tableRows.map(r=>`<tr>
+              <td>${r.ev.date.toISOString().split('T')[0]}</td>
+              <td>${r.ev.label}</td>
+              <td>$${r.priceAtEvent.toLocaleString()}</td>
+              <td class="${r.pctBefore>=0?'pos':'neg'}">${r.pctBefore>=0?'+':''}${r.pctBefore.toFixed(2)}%</td>
+              <td class="${r.pctAfter>=0?'pos':'neg'}">${r.pctAfter>=0?'+':''}${r.pctAfter.toFixed(2)}%</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+
+    if (currentChart) { currentChart.forEach(c=>c&&c.destroy()); }
+    currentChart = [];
+
+    // Price chart
+    const pctx = document.getElementById('priceChart').getContext('2d');
+    currentChart.push(new Chart(pctx, {
+      type:'line',
+      data:{ datasets:[priceDataset] },
+      options:{
+        responsive:true,
+        plugins:{
+          legend:{display:false},
+          annotation:{annotations}
+        },
+        scales:{
+          x:{type:'time',time:{unit:'month'},grid:{color:'#ffffff11'},ticks:{color:'#aaa'}},
+          y:{grid:{color:'#ffffff11'},ticks:{color:'#aaa',callback:v=>'$'+v.toLocaleString()}}
+        }
+      }
+    }));
+
+    // Trend chart
+    const tctx = document.getElementById('trendChart').getContext('2d');
+    const labels = [];
+    for(let i=-WINDOW;i<=WINDOW;i++) labels.push(i===0?'★ Событие':(i>0?'+'+i+'д':i+'д'));
+    currentChart.push(new Chart(tctx, {
+      type:'line',
+      data:{ labels, datasets: trendDatasets },
+      options:{
+        responsive:true,
+        plugins:{
+          legend:{labels:{color:'#eee'}},
+          tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw>=0?'+':''}${ctx.raw.toFixed(2)}%`}}
+        },
+        scales:{
+          x:{grid:{color:'#ffffff11'},ticks:{color:'#aaa'}},
+          y:{grid:{color:'#ffffff11'},ticks:{color:'#aaa',callback:v=>(v>=0?'+':'')+v.toFixed(1)+'%'}}
+        }
+      }
+    }));
+
+  } catch(e) {
+    statusEl.textContent = '❌ Ошибка: ' + e.message;
+  }
+}
+</script>
+</body>
+</html>
